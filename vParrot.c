@@ -52,6 +52,13 @@ int SleepNeed(int seconds, int state)
     return value;
 }
 
+int LifeLost(int seconds, int sleep)
+{
+    int value = 0;
+    if(sleep == 0) value -= seconds*0.55f;
+    return value;
+}
+
 typedef enum { Idle = 0, Sleeping } PetState; //0 Idle, 1 Sleeping
 
 
@@ -103,6 +110,7 @@ int main()
     fread(&position.x, 1, 4, vPetFile);
     fread(&position.y, 1, 4, vPetFile);
     fread(&sleep, 1, 4, vPetFile);
+    fread(&life, 1, 4, vPetFile);
     fread(&state, 1, 4, vPetFile);
     fread(&lastTime, 1, 8, vPetFile);
     currentTime = time (NULL);
@@ -113,6 +121,7 @@ int main()
     secondsPassed = (lastTime - currentTime)*-1;
     
     sleep += SleepNeed(secondsPassed, state);
+    life += LifeLost(secondsPassed, sleep);
     
     
     
@@ -132,7 +141,11 @@ int main()
             sprite.x = mayWidth / spriteRowsX * frameX;
             sprite.y = mayHeight / spriteRowsY * frameY;
             
-            if(IsMouseButtonPressed(0)) state++;
+            if(IsMouseButtonPressed(0)) 
+            {
+                state++;
+                frameX = 0;
+            }
             if(state > 1) state = 0;
             
             if(IsKeyDown(KEY_UP)) position.y-=2;
@@ -171,8 +184,13 @@ int main()
                         if(frameX > 3) frameX = 0;
                     }
                     
-                    if(framesCounter%45 == 0)sleep--;
+                    if(framesCounter%45 == 0)
+                    {
+                        sleep--;
+                        if (sleep == 0) life--;
+                    }
                     if(sleep <= 0) sleep = 0;
+                    
                 }
                 break;
                 
@@ -187,15 +205,16 @@ int main()
                         if(frameX > 1) frameX = 0;
                     }
                     
-                    if(framesCounter%45 == 0)sleep++;
+                    if(framesCounter%45 == 0) sleep++;
+                        
+                    
                     if(sleep >= 100) sleep = 100;
                 }
                 break;
                 
-                default:break;
-                
-                
+                default:break;          
             }
+            
             
             
             if(IsKeyPressed(KEY_ENTER))
@@ -205,6 +224,7 @@ int main()
                 fwrite(&position.x, 1, 4, vPetFile);
                 fwrite(&position.y, 1, 4, vPetFile);
                 fwrite(&sleep, 1, 4, vPetFile);
+                fwrite(&life, 1, 4, vPetFile);
                 fwrite(&state, 1, 4, vPetFile);
                 fwrite(&lastTime, 1, 8, vPetFile);
             }
@@ -217,8 +237,10 @@ int main()
             
             //DrawTexture(may, 50, 50, WHITE);
             DrawTextureRec(may, sprite, position, WHITE);
-            DrawRectangle(0,0,sleep,25, ORANGE);
-            DrawText(FormatText("%i", sleep), 0, 0, 20, BLACK);
+            DrawRectangle(150,0,sleep,25, ORANGE);
+            DrawText(FormatText("Sleep: %i", sleep), 155, 0, 19, BLACK);
+            DrawRectangle(0,0,life,25, RED);
+            DrawText(FormatText("Health: %i", life), 5, 0, 19, BLACK);
             DrawText(FormatText("%ld", currentTime), 50, 50, 20, BLACK);
             DrawText(FormatText("%ld", lastTime), 50, 100, 20, BLACK);
             DrawText(FormatText("%i", daysPassed), 50, 150, 20, BLACK);
