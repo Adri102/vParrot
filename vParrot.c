@@ -52,10 +52,11 @@ int SleepNeed(int seconds, int state)
     return value;
 }
 
-int LifeLost(int seconds, int sleep)
+int LifeLost(int seconds, bool sleep)
 {
     int value = 0;
-    if(sleep == 0) value -= seconds*0.55f;
+    if(!sleep) value -= seconds*0.5f;
+    else value += seconds*0.5f;
     return value;
 }
 
@@ -80,6 +81,9 @@ int main()
     int frameX = 0;
     int frameY = 0;
     int framesCounter = 0;
+    
+    bool started = true;
+    bool notEnoughSleep = false;
     
     Vector2 position = { 0, 0 };
     
@@ -119,13 +123,7 @@ int main()
     hoursPassed = GetHoursPassed(currentTime, lastTime);
     minutesPassed = GetMinutesPassed(currentTime, lastTime);
     secondsPassed = (lastTime - currentTime)*-1;
-    
-    sleep += SleepNeed(secondsPassed, state);
-    life += LifeLost(secondsPassed, sleep);
-    
-    
-    
-    
+  
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
 
@@ -136,6 +134,12 @@ int main()
         //----------------------------------------------------------------------------------
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
+        if (started)
+        {
+            sleep += SleepNeed(secondsPassed, state);
+            life += LifeLost(secondsPassed, sleep);
+            started = false;
+        }
             bounds.x = position.x;
             bounds.y = position.y;
             sprite.x = mayWidth / spriteRowsX * frameX;
@@ -187,10 +191,12 @@ int main()
                     if(framesCounter%45 == 0)
                     {
                         sleep--;
-                        if (sleep == 0) life--;
+                        if (notEnoughSleep) life--;
+                        else life++;
+                        if (life <= 0) life = 0;
+                        if (life >= 100) life = 100;
                     }
                     if(sleep <= 0) sleep = 0;
-                    
                 }
                 break;
                 
@@ -205,9 +211,15 @@ int main()
                         if(frameX > 1) frameX = 0;
                     }
                     
-                    if(framesCounter%45 == 0) sleep++;
-                        
-                    
+                    if(framesCounter%45 == 0) 
+                    {
+                        sleep++;
+                        if (!notEnoughSleep) life++;
+                        else life--;
+                        if (life <= 0) life = 0;
+                        if (life >= 100) life = 100;
+                    }
+
                     if(sleep >= 100) sleep = 100;
                 }
                 break;
@@ -215,7 +227,11 @@ int main()
                 default:break;          
             }
             
-            
+            if (sleep <= 0)
+            {
+                notEnoughSleep = true;
+            }
+            else notEnoughSleep = false;
             
             if(IsKeyPressed(KEY_ENTER))
             {
